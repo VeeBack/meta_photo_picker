@@ -54,8 +54,12 @@ android {
     }
 
     testOptions {
+        // ExifInterface and ExifMetadataReader call android.util.Log, which plain JVM tests only stub.
+        unitTests.returnDefaultValues = true
         unitTests.all {
             useJUnitPlatform()
+            // The same heap ceiling as the phones in the out-of-memory crash reports.
+            maxHeapSize = "256m"
 
             testLogging {
                events "passed", "skipped", "failed", "standardOut", "standardError"
