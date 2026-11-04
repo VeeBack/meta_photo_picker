@@ -8,7 +8,6 @@ import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import androidx.annotation.NonNull
-import androidx.exifinterface.media.ExifInterface
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -19,7 +18,6 @@ import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry
 import java.io.File
 import java.io.FileOutputStream
-import java.text.SimpleDateFormat
 import java.util.*
 import android.graphics.BitmapFactory
 import android.util.Log
@@ -216,57 +214,9 @@ class MetaPhotoPickerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, Pl
         }
       }
       
-      var creationDate: String? = null
-      var orientation = "Up"
-      
-      try {
-        val exif = ExifInterface(targetFile.absolutePath)
-        
-        val dateTimeOriginal = exif.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL)
-        val dateTimeDigitized = exif.getAttribute(ExifInterface.TAG_DATETIME_DIGITIZED)
-        val dateTime = exif.getAttribute(ExifInterface.TAG_DATETIME)
-        
-        val dateString = dateTimeOriginal ?: dateTimeDigitized ?: dateTime
-        
-        if (dateString != null) {
-          try {
-            val exifDateFormat = SimpleDateFormat("yyyy:MM:dd HH:mm:ss", Locale.US)
-            val date = exifDateFormat.parse(dateString)
-            if (date != null) {
-              val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
-              isoFormat.timeZone = TimeZone.getTimeZone("UTC")
-              creationDate = isoFormat.format(date)
-            }
-          } catch (e: Exception) {
-            Log.w(TAG, "Error parsing EXIF date: ${e.message}")
-          }
-        }
-        
-        val exifOrientation = exif.getAttributeInt(
-          ExifInterface.TAG_ORIENTATION,
-          ExifInterface.ORIENTATION_NORMAL
-        )
-        
-        orientation = when (exifOrientation) {
-          ExifInterface.ORIENTATION_NORMAL -> "Up"
-          ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> "UpMirrored"
-          ExifInterface.ORIENTATION_ROTATE_180 -> "Down"
-          ExifInterface.ORIENTATION_FLIP_VERTICAL -> "DownMirrored"
-          ExifInterface.ORIENTATION_TRANSPOSE -> "LeftMirrored"
-          ExifInterface.ORIENTATION_ROTATE_90 -> "Right"
-          ExifInterface.ORIENTATION_TRANSVERSE -> "RightMirrored"
-          ExifInterface.ORIENTATION_ROTATE_270 -> "Left"
-          else -> "Up"
-        }
-      } catch (e: Exception) {
-        Log.w(TAG, "Error reading EXIF data: ${e.message}")
-      }
-      
-      if (creationDate == null) {
-        val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
-        isoFormat.timeZone = TimeZone.getTimeZone("UTC")
-        creationDate = isoFormat.format(Date())
-      }
+      val exifMetadata = ExifMetadataReader.read(targetFile)
+      val creationDate = exifMetadata.creationDate ?: ExifMetadataReader.formatAsIsoUtc(Date())
+      val orientation = exifMetadata.orientation
       
       val fileSizeFormatted = formatBytes(fileSize.toDouble())
       
