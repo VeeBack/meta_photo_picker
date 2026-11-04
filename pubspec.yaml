@@ -1,6 +1,6 @@
 name: meta_photo_picker
 description: A privacy-first Flutter plugin for picking image files with detailed metadata. Uses native file pickers with image filtering on both iOS and Android (no permissions required).
-version: 0.0.4
+version: 0.0.5
 homepage: https://github.com/manveer-logiciel/meta_photo_picker
 repository: https://github.com/manveer-logiciel/meta_photo_picker
 issue_tracker: https://github.com/manveer-logiciel/meta_photo_picker/issues

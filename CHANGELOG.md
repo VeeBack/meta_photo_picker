@@ -1,3 +1,8 @@
+## 0.0.5
+
+* **Android:** Fixed a crash when picking a photo whose EXIF data claims an impossibly large field (for example 544 MB). Reading that field made `ExifInterface` request a single array larger than the heap, and the resulting `OutOfMemoryError` closed the app. EXIF reading now lives in `ExifMetadataReader`, which also catches `OutOfMemoryError`: the photo is still picked, without its EXIF creation date and orientation (the creation date falls back to the pick time, orientation to `Up`).
+* Added unit tests for `ExifMetadataReader`, including the oversized-EXIF case under a 256 MB test heap.
+
 ## 0.0.4
 
 * **Major Architecture Change:**
