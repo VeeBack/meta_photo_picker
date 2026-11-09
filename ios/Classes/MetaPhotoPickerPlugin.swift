@@ -38,7 +38,7 @@ public class MetaPhotoPickerPlugin: NSObject, FlutterPlugin {
     
     private func presentPhotoPicker(config: [String: Any]) {
         guard #available(iOS 14, *) else {
-            flutterResult?(FlutterError(code: "UNSUPPORTED_VERSION",
+            completePicking(FlutterError(code: "UNSUPPORTED_VERSION",
                                        message: "PHPicker requires iOS 14 or later",
                                        details: nil))
             return
@@ -86,6 +86,7 @@ public class MetaPhotoPickerPlugin: NSObject, FlutterPlugin {
             
             let picker = PHPickerViewController(configuration: configuration)
             picker.delegate = self
+            picker.presentationController?.delegate = self
             
             if let viewController = UIApplication.shared.keyWindow?.rootViewController {
                 viewController.present(picker, animated: true)
@@ -93,6 +94,12 @@ public class MetaPhotoPickerPlugin: NSObject, FlutterPlugin {
         }
     }
     
+    private func completePicking(_ value: Any?) {
+        let result = flutterResult
+        flutterResult = nil
+        result?(value)
+    }
+
     private func formatBytes(_ bytes: Double) -> String {
         let kb = bytes / 1024
         let mb = kb / 1024
@@ -137,13 +144,21 @@ public class MetaPhotoPickerPlugin: NSObject, FlutterPlugin {
     }
 }
 
+@available(iOS 13, *)
+extension MetaPhotoPickerPlugin: UIAdaptivePresentationControllerDelegate {
+    public func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+        completePicking(nil)
+    }
+}
+
 @available(iOS 14, *)
 extension MetaPhotoPickerPlugin: PHPickerViewControllerDelegate {
     public func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+        picker.presentationController?.delegate = nil
         picker.dismiss(animated: true)
         
         guard !results.isEmpty else {
-            flutterResult?(nil) // User cancelled
+            completePicking(nil) // User cancelled
             return
         }
         
@@ -177,7 +192,7 @@ extension MetaPhotoPickerPlugin: PHPickerViewControllerDelegate {
             group.notify(queue: .main) {
                 // Notify end of loading
                 self.channel?.invokeMethod("onLoadEnded", arguments: nil)
-                self.flutterResult?(photoInfoList)
+                self.completePicking(photoInfoList)
             }
         }
     }
